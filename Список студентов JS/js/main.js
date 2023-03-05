@@ -1,50 +1,5 @@
 // Массив студентов
-
-let students = [
-  new Student(
-    "Вадим",
-    "Пинчук",
-    "Иванович",
-    new Date(1980, 06, 05),
-    2015,
-    "биологический"
-  ),
-  new Student(
-    "Елена",
-    "Новикова",
-    "Андреевна",
-    new Date(2000, 00, 05),
-    2021,
-    "химический"
-  ),
-
-  new Student(
-    "Петр",
-    "Петров",
-    "Петрович",
-    new Date(2002, 10, 00),
-    2017,
-    "географический"
-  ),
-
-  new Student(
-    "Александра",
-    "Мясникович",
-    "Ивановна",
-    new Date(1992, 03, 11),
-    2023,
-    "юридический"
-  ),
-
-  new Student(
-    "Маргарита",
-    "Арутюнян",
-    "Гавриловна",
-    new Date(1995, 09, 23),
-    2020,
-    "экономический"
-  ),
-];
+let students = [];
 
 //Получаем массив c сервера
 
@@ -52,24 +7,22 @@ async function serverArr() {
   const responseST = await fetch("http://localhost:3000/api/students");
 
   let res = await responseST.json();
-  res.forEach(() => {
-    students.push (
+  res.forEach((student) => {
+    students.push(
       new Student(
-      res.name,
-      res.surname,
-      res.lastname,
-     new Date(res.birthday),
-     Number(res.studyStart),
-      res.faculty,
-    ));
-  })
-  console.log(students)
-return students;
-
+        student.name,
+        student.surname,
+        student.lastname,
+        new Date(student.birthday),
+        Number(student.studyStart),
+        student.faculty
+      )
+    );
+  });
+  render();
+  return students;
 }
-
 serverArr();
-
 
 const $studentsList = document.getElementById("students-list"),
   $studentsListTHAll = document.querySelectorAll(".student-table th"),
@@ -84,14 +37,16 @@ let column = "fio",
 
 // Получить ТR студента
 
-   function newStudentTR(student) {
-
-
-    const $studentTR = document.createElement("tr"),
+function newStudentTR(student) {
+  const $studentTR = document.createElement("tr"),
     $fioTd = document.createElement("td"),
     $facultyTD = document.createElement("td"),
     $birthDateTD = document.createElement("td"),
     $startEducationTD = document.createElement("td");
+
+  let deleteButton = document.createElement("span");
+  deleteButton.textContent = "DELETE";
+  deleteButton.classList.add("delete-btn");
 
   $fioTd.textContent = student.fio;
   $facultyTD.textContent = student.faculty;
@@ -100,13 +55,24 @@ let column = "fio",
 
   $startEducationTD.textContent =
     student.startEducation + " " + "-" + " " + student.getEducationPeriod();
-   $studentTR.append($fioTd);
-   $studentTR.append($facultyTD);
-   $studentTR.append($birthDateTD);
-   $studentTR.append($startEducationTD);
 
+  $studentTR.append($fioTd);
+  $studentTR.append($facultyTD);
+  $studentTR.append($birthDateTD);
+  $studentTR.append($startEducationTD);
+  $studentTR.append(deleteButton);
 
-
+  deleteButton.addEventListener("click", () => {
+    if (!confirm("Вы уверены?")) {
+      return;
+    } else {
+      //`DELETE /api/students/{id}` удалить студента по переданному ID. Как передать сюда этот id?
+      fetch(`http://localhost:3000/api/students`, {
+        method: "DELETE",
+      });
+      $studentTR.remove();
+    }
+  });
   return $studentTR;
 }
 
@@ -144,15 +110,9 @@ function filterEndDate(arr) {
   });
 }
 
-
-
-
-
 // Отрисовать
 
-  function render() {
-
-
+function render() {
   let studentsCopy = [...students];
 
   studentsCopy = getSortStudents(column, columnDir);
@@ -200,7 +160,6 @@ $studentsListTHAll.forEach((element) => {
 });
 
 render();
-
 
 // Добавление студентов
 
@@ -263,54 +222,49 @@ validation.addField("#input-faculty", [
   },
 ]);
 
+document
+  .getElementById("add-student")
+  .addEventListener("submit", async function (event) {
+    event.preventDefault();
 
-  document
-    .getElementById("add-student")
-    .addEventListener("submit", async function (event)  {
-      event.preventDefault();
+    if (validation.isValid) {
+      const response = await fetch("http://localhost:3000/api/students", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: document.getElementById("input-name").value,
+          surname: document.getElementById("input-surname").value,
+          lastname: document.getElementById("input-lastname").value,
+          birthday: new Date(document.getElementById("input-birthDate").value),
+          studyStart: Number(
+            document.getElementById("input-startEducation").value
+          ),
+          faculty: document.getElementById("input-faculty").value,
+        }),
+      });
+      const data = await response.json();
 
-      if (validation.isValid) {
-
-
-          const response = await fetch("http://localhost:3000/api/students", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              name: document.getElementById("input-name").value,
-              surname: document.getElementById("input-surname").value,
-              lastname: document.getElementById("input-lastname").value,
-              birthday: new Date(document.getElementById("input-birthDate").value),
-              studyStart: Number(document.getElementById("input-startEducation").value),
-              faculty: document.getElementById("input-faculty").value,
-            }),
-
-          });
-          const data = await response.json();
-          console.log(data)
-          students.push (
-            new Student(
-            data.name,
-            data.surname,
-            data.lastname,
-           new Date(data.birthday),
-           Number(data.studyStart),
-            data.faculty
-          ));
-
-
-          render();
-
-      }
-      document.getElementById("input-name").value = '';
-      document.getElementById("input-surname").value = '';
-      document.getElementById("input-lastname").value = '';
-      document.getElementById("input-birthDate").value = '';
-      document.getElementById("input-startEducation").value = '';
-      document.getElementById("input-faculty").value = '';
-    });
-
+      students.push(
+        new Student(
+          data.name,
+          data.surname,
+          data.lastname,
+          new Date(data.birthday),
+          Number(data.studyStart),
+          data.faculty
+        )
+      );
+      render();
+    }
+    document.getElementById("input-name").value = "";
+    document.getElementById("input-surname").value = "";
+    document.getElementById("input-lastname").value = "";
+    document.getElementById("input-birthDate").value = "";
+    document.getElementById("input-startEducation").value = "";
+    document.getElementById("input-faculty").value = "";
+  });
 
 $filterForm.addEventListener("submit", function (event) {
   event.preventDefault();
